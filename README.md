@@ -118,3 +118,7 @@ upgrade mechanics.
 - The SQL ones run under `psql`; the Python ones under `odoo-bin shell`.
 - Read the header of a file before running it. Each one states what it writes,
   what it only reads, and what reverses it.
+
+## tools/
+
+The full set of shell scripts used after the upgrade, as they stand on 2026-09-22: Studio model dossiers and migrations, payroll and attendance audits, store and requests carry-overs, and the `exercise_*.py` test suites. Each file starts with a docstring saying what it does, what it reads and whether it writes; most write nothing unless a variable such as `SSC_WRITE=1` is set. Run with `odoo-bin shell --no-http --shell-interface=python < tools/<name>.py`.
