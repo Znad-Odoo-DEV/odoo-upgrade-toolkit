@@ -179,7 +179,12 @@ for l in X['lines']:
     attr_of_tmpl[m2o(l['product_tmpl_id'])].add(l['attribute_id'][1])
 def var_vals(vid):
     v = next(x for x in X['variants'] if x['id'] == vid)
-    return {ptav[p]['attribute_id'][1]: ptav[p]['product_attribute_value_id'][1] for p in v['product_template_attribute_value_ids'] if p in ptav}
+    out = {}
+    for p in v['product_template_attribute_value_ids']:
+        if p in ptav:
+            a = ptav[p]['attribute_id'][1]; val = ptav[p]['product_attribute_value_id'][1]
+            out[a] = val.split(': ', 1)[1] if val.startswith(a + ': ') else val
+    return out
 plan_var = []
 for key, items in targets.items():
     if key[0] == 'T':
@@ -203,7 +208,7 @@ for key, items in targets.items():
             hold({'tmpl_id': t, 'action': 'VARIANT'}, f'attribute set {sorted(vals)} differs from template {attrs}'); continue
         combo = tuple(vals[a] for a in attrs)
         if combo in taken:
-            hold({'tmpl_id': t, 'action': 'VARIANT'}, f'same combination {combo} as another item: question'); continue
+            hold({'tmpl_id': t, 'action': 'VARIANT'}, f'same combination {combo} as another item or an existing variant of T{key[1] if key[0]=="T" else "new"}: same item? (possible merge into that variant)'); continue
         taken.add(combo); new.append({'var': v, 'vals': list(combo)})
     if key[0] == 'N':
         if len(new) < 2:
@@ -212,7 +217,7 @@ for key, items in targets.items():
         master = new[0]['var']
     elif not new:
         continue
-    plan_var.append({'tk': f'{key[0]}-{key[1]}', 'name': name, 'attrs': attrs, 'master': master, 'items': base + new})
+    plan_var.append({'tk': f'{key[0]}-{key[1]}' + (f'-{key[2]}' if len(key) > 2 and key[2] not in ('EA', '?') else ''), 'name': name, 'attrs': attrs, 'master': master, 'items': base + new})
 
 json.dump(plan_merge, open(W / 'data/r2_plan_merge.json', 'w', encoding='utf-8'), ensure_ascii=False)
 json.dump(plan_var, open(W / 'data/r2_plan_variants.json', 'w', encoding='utf-8'), ensure_ascii=False)
