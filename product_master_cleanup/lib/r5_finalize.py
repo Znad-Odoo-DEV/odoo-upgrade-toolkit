@@ -44,6 +44,9 @@ for q in rd(W / 'data/r5_qa_S.csv') + rd(W / 'data/r5_qa_NT.csv') + rd(W / 'data
                 i['vals'][k] = nv; log['value fixed'] += 1
     elif act == 'FIX_VALUE' and nv and tk.startswith('S') and (m := re.search(r'replace attribute ([A-Za-z ]+?) by ([A-Za-z ]+?)\b', q.get('reason') or '')) and m.group(1) in p['attrs'] and m.group(2) == fld:
         k = p['attrs'].index(m.group(1)); p['attrs'][k] = fld; p['items'][0]['vals'][k] = nv; log['attribute replaced'] += 1
+    elif act == 'FIX_VALUE' and nv and fld not in p['attrs'] and it is not None and \
+            (k := next((k for i in p['items'] if i['var'] == it for k, v in enumerate(i['vals']) if v.replace(' ', '').lower() == nv.replace(' ', '').lower()), None)) is not None:
+        p['attrs'][k] = fld; log['attribute replaced'] += 1  # the value is right, its attribute was wrong (Weight -> Capacity ...)
     else:
         log[f'ignored {act}'] += 1; miss.append(f'{tk} {act} {fld}')
 # S-/N- templates that end with the same name and attributes are one family (e.g. Backer Rod 30mm + 60mm)
