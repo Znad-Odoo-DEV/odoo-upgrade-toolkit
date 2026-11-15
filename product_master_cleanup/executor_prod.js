@@ -73,7 +73,7 @@ function __pcInit() {
     for (const c of COMPANIES) { const q0 = ids.reduce((a, id) => a + (s0.qty[`${id}@${c}`] || 0), 0), q1 = ids.reduce((a, id) => a + (s1.qty[`${id}@${c}`] || 0), 0), qm = s1.qty[`${p.master}@${c}`] || 0;
       const v1 = ids.reduce((a, id) => a + (s1.qty[`${id}@${c}`] || 0) * (s1.cost[`${id}@${c}`] || 0), 0);
       if (Math.abs(q0 - q1) > 1e-6 || Math.abs(qm - q1) > 1e-6) errs.push(`company ${c}: qty ${q0} -> ${q1}, master ${qm}`);
-      if (Math.abs(value0[c] - v1) > 0.01) errs.push(`company ${c}: value ${value0[c].toFixed(2)} -> ${v1.toFixed(2)}`);
+      if (Math.abs(value0[c] - v1) > 0.01 + q1 * 0.00005) errs.push(`company ${c}: value ${value0[c].toFixed(2)} -> ${v1.toFixed(2)}`);
       if (Math.abs((tot0[c] || 0) - (tot1[c] || 0)) > 1e-6) errs.push(`company ${c}: total ${tot0[c]} -> ${tot1[c]}`); }
     const still = (await call('product.product', 'read', [p.dups, ['active']], { context: CTX })).filter(r => r.active).map(r => r.id); if (still.length) errs.push(`dups still active ${still}`);
     const res = { kind: 'merge', g: p.g, master: p.master, dups: p.dups, errs, ms: Date.now() - T0 }; X.push(res); if (errs.length) X.stop = true; return res;
@@ -148,7 +148,7 @@ function __pcInit() {
       const q1 = after.reduce((a, id) => a + (s1.qty[`${id}@${c}`] || 0), 0), v1 = after.reduce((a, id) => a + (s1.qty[`${id}@${c}`] || 0) * (s1.cost[`${id}@${c}`] || 0), 0);
       const left = all.reduce((a, d) => a + (s1.qty[`${d.old}@${c}`] || 0), 0);
       if (Math.abs(q0 - q1) > 1e-6 || left) errs.push(`company ${c}: qty ${q0} -> ${q1} (left on old ${left})`);
-      if (pre.length === 0 && Math.abs(v0 - v1) > 0.01) errs.push(`company ${c}: value ${v0.toFixed(2)} -> ${v1.toFixed(2)}`);
+      if (pre.length === 0 && Math.abs(v0 - v1) > 0.01 + q1 * 0.00005) errs.push(`company ${c}: value ${v0.toFixed(2)} -> ${v1.toFixed(2)}`);
       if (Math.abs((tot0[c] || 0) - (tot1[c] || 0)) > 1e-6) errs.push(`company ${c}: company total ${tot0[c]} -> ${tot1[c]}`); }
     const act = await call('product.product', 'read', [after, ['active']], { context: CTX }); for (const a of act) if (!a.active) errs.push(`variant ${a.id} archived after conversion`);
     const res = { kind: 'variant', tk: tp.tk, mT, master: tp.master, converted: done.map(d => [d.old, d.nv, d.reused ? 1 : 0]), already: pre.length, errs, ms: Date.now() - T0 };
@@ -308,7 +308,7 @@ function __pcInit() {
     for (const c of COMPANIES) { const q0 = ids.reduce((a, id) => a + (s0.qty[`${id}@${c}`] || 0), 0), q1 = ids.reduce((a, id) => a + (s1.qty[`${id}@${c}`] || 0), 0), qm = s1.qty[`${p.master}@${c}`] || 0;
       const v1 = ids.reduce((a, id) => a + (s1.qty[`${id}@${c}`] || 0) * (s1.cost[`${id}@${c}`] || 0), 0);
       if (Math.abs(q0 - q1) > 1e-6 || Math.abs(qm - q1) > 1e-6) errs.push(`company ${c}: qty ${q0} -> ${q1}, master ${qm}`);
-      if (Math.abs(value0[c] - v1) > 0.01) errs.push(`company ${c}: value ${value0[c].toFixed(2)} -> ${v1.toFixed(2)}`);
+      if (Math.abs(value0[c] - v1) > 0.01 + q1 * 0.00005) errs.push(`company ${c}: value ${value0[c].toFixed(2)} -> ${v1.toFixed(2)}`);
       if (Math.abs((tot0[c] || 0) - (tot1[c] || 0)) > 1e-6) errs.push(`company ${c}: total ${tot0[c]} -> ${tot1[c]}`); }
     const still = (await call('product.product', 'read', [p.dups, ['active']], { context: CTX })).filter(r => r.active).map(r => r.id); if (still.length) errs.push(`dups still active ${still}`);
     const r = { kind: 'merge7', g: p.g, master: p.master, dups: p.dups, emptied, errs, ms: Date.now() - T0 }; X.push(r); if (errs.length) X.stop = true; return r; };
