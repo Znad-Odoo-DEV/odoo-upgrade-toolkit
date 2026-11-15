@@ -12,7 +12,7 @@ R = json.load(open(W / 'data/r5_renames.json', encoding='utf-8'))
 Vk = {p['tk']: p for p in V}; Mk = {p['g']: p for p in M}
 log, miss = Counter(), []
 num = lambda x: int(float(x)) if (x or '').strip() else None
-for q in rd(W / 'data/r5_qa_S.csv') + rd(W / 'data/r5_qa_NT.csv') + rd(W / 'data/r6_qa.csv'):
+for q in rd(W / 'data/r5_qa_S.csv') + rd(W / 'data/r5_qa_NT.csv'):
     tk, it, act = q['tk'].strip(), num(q['item']), q['action'].strip().upper()
     fld, nv = (q.get('field') or '').strip(), (q.get('new_value') or '').strip()
     if tk in Mk:
@@ -35,36 +35,13 @@ for q in rd(W / 'data/r5_qa_S.csv') + rd(W / 'data/r5_qa_NT.csv') + rd(W / 'data
             n0 = len(p['items']); p['items'] = [i for i in p['items'] if i['var'] != it]; log['item dropped'] += n0 - len(p['items'])
     elif act == 'FIX_NAME' and nv and not tk.startswith('T'):
         p['name'] = nv; log['name fixed'] += 1
-    elif act == 'FIX_VALUE' and nv and fld not in p['attrs'] and tk.startswith('S') and len(p['attrs']) == 1:
-        p['attrs'] = [fld]; p['items'][0]['vals'] = [nv]; log['attribute replaced'] += 1  # e.g. Size -> Thickness
     elif act == 'FIX_VALUE' and nv and fld in p['attrs']:
         k = p['attrs'].index(fld)
         for i in p['items']:
             if it is None or i['var'] == it:
                 i['vals'][k] = nv; log['value fixed'] += 1
-    elif act == 'FIX_VALUE' and nv and tk.startswith('S') and (m := re.search(r'replace attribute ([A-Za-z ]+?) by ([A-Za-z ]+?)\b', q.get('reason') or '')) and m.group(1) in p['attrs'] and m.group(2) == fld:
-        k = p['attrs'].index(m.group(1)); p['attrs'][k] = fld; p['items'][0]['vals'][k] = nv; log['attribute replaced'] += 1
-    elif act == 'FIX_VALUE' and nv and fld not in p['attrs'] and it is not None and \
-            (k := next((k for i in p['items'] if i['var'] == it for k, v in enumerate(i['vals']) if v.replace(' ', '').lower() == nv.replace(' ', '').lower()), None)) is not None:
-        p['attrs'][k] = fld; log['attribute replaced'] += 1  # the value is right, its attribute was wrong (Weight -> Capacity ...)
     else:
-        log[f'ignored {act}'] += 1; miss.append(f'{tk} {act} {fld}')
-# S-/N- templates that end with the same name and attributes are one family (e.g. Backer Rod 30mm + 60mm)
-fam = {}
-for p in V:
-    if p['tk'][0] in 'SN' and p['items']:
-        k = (re.sub(r'[^a-z0-9]', '', p['name'].lower()), tuple(p['attrs']))
-        if k in fam:
-            f = fam[k]; f['items'] += p['items']; p['items'] = []
-            if f['tk'][0] == 'S':
-                f['tk'] = 'N-' + k[0][:40] + '-x'
-            log['same-name templates joined'] += 1
-        else:
-            fam[k] = p
-# lead decisions: a density is not a Weight -> the item keeps it in its name, no attribute (rename only)
-for tk, nm in {'S-10320': 'Clean Liner Roll Fibreglass 24kg/m3'}.items():
-    if tk in Vk:
-        X_t = Vk[tk]; X_t['items'] = []; R.append([None, {'name': nm, 'var': X_t['master']}]); log['lead: attribute removed, rename only'] += 1
+        log[f'ignored {act}'] += 1
 # clean up: separators, duplicate combinations, masters, families of one
 bad = lambda s: bool(re.search(r'[|~#^]', s or ''))
 VV = []
@@ -99,5 +76,3 @@ print('QA', dict(log), '| unknown tk', len(miss), miss[:5])
 print('merges', len(MM), 'CHECK', ck([p['master'] for p in MM] + [d for p in MM for d in p['dups']]))
 print('variants', len(VV), Counter(p['tk'][0] for p in VV), 'CHECK', ck([i['var'] for p in VV for i in p['items']]), 'attrs', sorted({a for p in VV for a in p['attrs']}))
 print('renames', len(R), 'sizes', (W / 'data/r5_c_merge.txt').stat().st_size, (W / 'data/r5_c_variants.txt').stat().st_size)
-
-json.dump(R, open(W / 'data/r5_final_renames.json', 'w', encoding='utf-8'), ensure_ascii=False)
