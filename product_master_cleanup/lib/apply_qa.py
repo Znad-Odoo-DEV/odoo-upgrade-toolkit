@@ -19,8 +19,6 @@ for fx in csv.DictReader(open(W / 'data/qa_fixes.csv', encoding='utf-8-sig')):
         log.append({**fx, 'status': 'unknown file'}); continue
     cols, rows = files[name]
     hit = [r for r in rows if r['var_id'].strip() == fx['var_id'].strip()]
-    if not hit and 'new row' in fx['reason'].lower():
-        new = {c: '' for c in cols}; new['var_id'] = fx['var_id'].strip(); rows.append(new); hit = [new]
     if not hit:
         log.append({**fx, 'status': 'var_id not in file'}); continue
     field = fx['field'].strip()
