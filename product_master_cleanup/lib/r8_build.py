@@ -133,6 +133,7 @@ for k in list(fam):
 
 # families -> target move + variant merges + joins
 merges, joins = [], []
+joined_gone = set()  # members merged into their family target (the target chosen AFTER sorting)
 for k, members in fam.items():
     members = [m for m in members if T.get(m['t'])]
     FAMU = {'RAW:pvc': 'EA', 'RAW:trip': 'EA', 'SHEET': 'EA'}  # 'PVC' typed as a unit, a trip, a sheet = one piece
@@ -189,10 +190,11 @@ for k, members in fam.items():
         catw[tgt['t']] = fcats.most_common(1)[0][0]
     for m in members[1:]:
         catw.pop(m['t'], None)
+    joined_gone |= {m['t'] for m in members[1:]}
 
 # names: a final name used by another remaining template -> held (no duplicate names)
 final_names = Counter()
-gone = {m['t'] for k, ms in fam.items() for m in ms[1:]}
+gone = joined_gone
 named = {mv['t']: mv['name'] for mv in moves} | {t: n for t, n in renames}
 for t, tr in T.items():
     if t not in gone:
