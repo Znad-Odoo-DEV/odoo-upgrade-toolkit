@@ -14,6 +14,6 @@ OLD_SI = ("    for (const d of all) { const si = await call('product.supplierinf
           "if (si.length) await call('product.supplierinfo', 'write', [si, { product_tmpl_id: mT, product_id: d.nv }], { context: CTX }); }")
 assert OLD_SI in s, 'supplierinfo line not found'
 s = s.replace(OLD_SI + '\n', rd('exec_si_fix.js'))
-s = s.replace("  return 'pc executor ready';", rd('exec_patches.js') + rd('exec_r7.js') + "  return 'pc executor ready (production build)';")
+s = s.replace("  return 'pc executor ready';", rd('exec_patches.js') + rd('exec_r7.js') + rd('exec_ptav.js') + "  return 'pc executor ready (production build)';")
 (W / 'executor_prod.js').write_text(s, encoding='utf-8', newline='\n')
 print('executor_prod.js', len(s))
