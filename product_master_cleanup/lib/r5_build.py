@@ -146,7 +146,7 @@ for r in rows:
         pa, pb = lastprice.get(v, 0), lastprice.get(d, 0)
         if ua != '?' and ub != '?' and ua != ub:
             hold(v, act, f'units differ {T[t]["x_unit"]} vs {T[v2t[d]]["x_unit"]}'); continue
-        if pa and pb and max(pa, pb) / min(pa, pb) > 3:
+        if pa and pb and min(pa, pb) >= 0.01 and max(pa, pb) / min(pa, pb) > 3:  # 0.0001 = placeholder price, not a price
             hold(v, act, f'last PO price {pa} vs {pb} (>3x)'); continue
         tgt = TT.get(v2t[d])
         if tgt and not mat_ok(nm, tgt['name']):
