@@ -91,34 +91,20 @@ def load_archived(data):
     return ids
 
 
-def log_archived_templates(log_p):
-    """Template ids the executor log records as archived (kind 'garbage', key t = template id)."""
-    out = set()
-    for r in json.load(open(log_p, encoding='utf-8')):
-        if r.get('kind') == 'garbage' and r.get('archived') and not r.get('errs') and not r.get('skipped'):
-            out.add(r['t'])
-    return out
-
-
 def add_log(mp, log_p):
     """Executor log edges go first in each chain (preferred over the plan files)."""
     for r in json.load(open(log_p, encoding='utf-8')):
-        if r.get('skipped'):  # errs are only post-checks: the action was done
+        if r.get('errs') or r.get('skipped'):
             continue
         k = r.get('kind')
         if k == 'variant':
             for c in r.get('converted') or []:
                 if c[0] != c[1]:
-                    mp[c[0]].insert(0, ('log-conv', c[1]))
+                    mp[c[0]].insert(0, ('log', c[1]))
         elif k in ('merge', 'merge7'):
             for d in r.get('dups') or []:
                 if d != r.get('master'):
-                    mp[d].insert(0, ('log-merge', r['master']))
-
-
-# Manual traces verified by hand (id -> [variant id, note]); kept in the local data folder, never in the code.
-_mt = os.path.join(sys.argv[1], 'data', 'manual_trace.json')
-MANUAL = {int(k): tuple(v) for k, v in json.load(open(_mt, encoding='utf-8')).items()} if os.path.exists(_mt) else {}
+                    mp[d].insert(0, ('log', r['master']))
 
 
 def main(work, before_p, after_p, out_p, log_p=None):
@@ -141,7 +127,6 @@ def main(work, before_p, after_p, out_p, log_p=None):
     if log_p:
         add_log(mp, log_p)
     archived = load_archived(data)
-    arch_t = log_archived_templates(log_p) if log_p else set()
 
     def attrs_of(v):
         parts = [(ptav[i]['attribute_id'][1], ptav[i]['name'])
@@ -152,27 +137,15 @@ def main(work, before_p, after_p, out_p, log_p=None):
         """-> (variant id|None, how) following merge chains, then default_code."""
         if i in av:
             return i, 'id'
-        for src, m in mp.get(i, []):
+        for _src, m in mp.get(i, []):
             if m in seen:
                 continue
-            r, how = resolve(m, seen | {i})
+            r, _how = resolve(m, seen | {i})
             if r:
-                # Merged if any edge of the chain is a duplicate merge; conversions only -> 'conv'
-                if src != 'log-conv' or how in ('merge', 'merge-code'):
-                    return r, 'merge'
-                return r, 'conv'
-        if i in MANUAL:
-            return MANUAL[i][0], 'manual'
+                return r, 'merge'
         c = before.get(i, {}).get('code', '')
         if c and len(codes.get(c, [])) == 1:
             return codes[c][0], 'code'
-        if c and any(src == 'log-conv' for src, _m in mp.get(i, [])):
-            # The log shows this product was converted into a new variant that was recreated later
-            # (its id is gone). Among variants sharing the code, only ones that are not an original
-            # product id can be that new variant; accept only if exactly one is left.
-            new = [x for x in codes.get(c, []) if x not in before]
-            if len(new) == 1:
-                return new[0], 'code'
         return None, None
 
     vcount = defaultdict(int)
@@ -190,10 +163,8 @@ def main(work, before_p, after_p, out_p, log_p=None):
         r, how = resolve(i, frozenset())
         note = ''
         if r is None:
-            via_log = b['tmpl'] in arch_t
-            st = 'Archived' if (i in archived or via_log) else 'Check'
-            note = (('Archived on production (run log: template %s).' % b['tmpl']) if via_log and st == 'Archived'
-                    else 'In the archive list.' if st == 'Archived'
+            st = 'Archived' if i in archived else 'Check'
+            note = ('In the archive list.' if st == 'Archived'
                     else 'Not found after the cleanup and not traceable through the merge files.')
             rows.append([i, b['code'], b['name'], b['category'], st, None, '', '', '', None, note])
             continue
@@ -202,7 +173,7 @@ def main(work, before_p, after_p, out_p, log_p=None):
         t = at.get(tid, {})
         tname = t.get('name') or v['product_tmpl_id'][1]
         attrs = attrs_of(v)
-        if how == 'merge':
+        if how == 'merge' or (i in mp and r != i):
             st = 'Merged into another item'
             note = 'Same item as product %s; stock and history moved there.' % r
         elif vcount[tid] > 1:
@@ -210,8 +181,6 @@ def main(work, before_p, after_p, out_p, log_p=None):
             note = 'Now a variant of "%s" (%d variants).' % (tname, vcount[tid])
         else:
             st = 'Kept'
-        if how == 'manual':
-            note = (note + ' ' if note else '') + MANUAL[i][1]
         if how == 'code' and r != i:
             note = (note + ' ' if note else '') + 'Matched by internal reference (product id changed to %s).' % r
         if (st != 'Merged into another item' and b['name'] and tname
