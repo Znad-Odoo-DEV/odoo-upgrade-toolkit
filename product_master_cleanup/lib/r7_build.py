@@ -135,8 +135,7 @@ for k in list(fam):
 merges, joins = [], []
 for k, members in fam.items():
     members = [m for m in members if T.get(m['t'])]
-    FAMU = {'RAW:pvc': 'EA', 'RAW:trip': 'EA', 'SHEET': 'EA'}  # 'PVC' typed as a unit, a trip, a sheet = one piece
-    units = {FAMU.get(unit_key(T[m['t']]['x_unit']), unit_key(T[m['t']]['x_unit'])) for m in members} - {'?'}
+    units = {unit_key(T[m['t']]['x_unit']) for m in members} - {'?'}
     if len(members) < 2 or len(units) > 1:
         for m in members:
             held.append((m['t'], T[m['t']]['name'], f'family {k}: ' + ('one template' if len(members) < 2 else f'units {sorted(units)}')))
@@ -163,7 +162,7 @@ for k, members in fam.items():
             d.setdefault(a, x)
         if 'Material' not in d:
             d['Material'] = m['mat'] or NS
-        return tuple(re.sub(r'[|~#^]', '/', str(d.get(a, NS))) for a in all_attrs)
+        return tuple(d.get(a, NS) for a in all_attrs)
     tv = VARS[tgt['t']]
     combos = {vals_of(tgt, v): v['id'] for v in tv}
     items = [{'var': tv[0]['id'], 'vals': list(vals_of(tgt, tv[0]))}]
