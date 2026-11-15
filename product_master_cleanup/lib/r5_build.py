@@ -146,7 +146,7 @@ for r in rows:
         pa, pb = lastprice.get(v, 0), lastprice.get(d, 0)
         if ua != '?' and ub != '?' and ua != ub:
             hold(v, act, f'units differ {T[t]["x_unit"]} vs {T[v2t[d]]["x_unit"]}'); continue
-        if pa and pb and min(pa, pb) >= 0.01 and max(pa, pb) / min(pa, pb) > 3:  # 0.0001 = placeholder price, not a price
+        if pa and pb and max(pa, pb) / min(pa, pb) > 3:
             hold(v, act, f'last PO price {pa} vs {pb} (>3x)'); continue
         tgt = TT.get(v2t[d])
         if tgt and not mat_ok(nm, tgt['name']):
@@ -200,14 +200,11 @@ for key in list(news):
         if key[1] != '?' and ut != '?' and key[1] != ut:
             continue
         items = news.pop(key)
-        # one template per item type: the existing template gets the missing attributes ("Not Specified" on its variants)
-        extra = sorted({a for _, vals, _ in items for a in vals} - set(tp['attrs']))
-        if extra:
-            tp['attrs'] = tp['attrs'] + extra
-            tp['exist'] = {c + (NS,) * len(extra): i for c, i in tp['exist'].items()}
-            tp.setdefault('extend', []).extend(extra)
         for v, vals, n in items:
-            joins[tt].append((v, {a: vals.get(a, NS) for a in tp['attrs']}))
+            if set(vals) == set(tp['attrs']):
+                joins[tt].append((v, vals))
+            else:
+                hold(v, 'NEW', f'name clashes with T{tt} "{tp["name"]}" {tp["attrs"]} but attributes {sorted(vals)}')
         break
 
 plan_var = []
