@@ -200,11 +200,14 @@ for key in list(news):
         if key[1] != '?' and ut != '?' and key[1] != ut:
             continue
         items = news.pop(key)
+        # one template per item type: the existing template gets the missing attributes ("Not Specified" on its variants)
+        extra = sorted({a for _, vals, _ in items for a in vals} - set(tp['attrs']))
+        if extra:
+            tp['attrs'] = tp['attrs'] + extra
+            tp['exist'] = {c + (NS,) * len(extra): i for c, i in tp['exist'].items()}
+            tp.setdefault('extend', []).extend(extra)
         for v, vals, n in items:
-            if set(vals) == set(tp['attrs']):
-                joins[tt].append((v, vals))
-            else:
-                hold(v, 'NEW', f'name clashes with T{tt} "{tp["name"]}" {tp["attrs"]} but attributes {sorted(vals)}')
+            joins[tt].append((v, {a: vals.get(a, NS) for a in tp['attrs']}))
         break
 
 plan_var = []
