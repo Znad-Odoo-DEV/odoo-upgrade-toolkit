@@ -10,7 +10,7 @@ CANON = {
     'M': ['m', 'mtr', 'mtrs', 'mt', 'mts', 'meter', 'metre', 'meters', 'l.m', 'lm', 'rm', 'r.m', '1 meter'],
     'M2': ['m2', 'sqm', 'sq.m', 'qsm', 'm²'],  # 'm�' (broken m2/m3 in the database) is NOT mapped -> RAW, review
     'M3': ['m3', 'cum', 'cu.m', 'cubic meter', 'm³'],
-    'L': ['ltr', 'ltr.', 'lts', 'litre', 'liter'],
+    'L': ['ltr', 'ltr.', 'lts', 'litre', 'liter', 'lth'],
     'GAL': ['gallon', 'gallons', 'gal', 'galon'],
     'KG': ['kg', 'kgs'],
     'TON': ['ton', 'tons', 'mt.'],
@@ -24,7 +24,7 @@ CANON = {
     'PAIR': ['pair', 'pairs'],
     'BUNDLE': ['bundle', 'bandl', 'pndle'],
     'LS': ['l.s', 'ls', 'lumpsum', 'lumtsum', 'lump sum'],
-    'LENGTH': ['length', 'lth'],
+    'LENGTH': ['length'],
     'SHEET': ['sheet', 'sheets', 'board'],
     'CAN': ['can'],
     'BOTTLE': ['bottle', '5l bottle'],
