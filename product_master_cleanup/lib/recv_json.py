@@ -8,6 +8,7 @@ from urllib.parse import urlparse, parse_qs
 W = Path(sys.argv[1]).resolve(); PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8766
 OUT = W / 'data' / 'dd'; OUT.mkdir(parents=True, exist_ok=True)
 ORIGINS = {o for o in os.environ.get('PC_ORIGINS', '').split(',') if o}  # e.g. https://<db>.odoo.com
+FILES = {'executor_prod.js', 'lib/exec_join.js', 'data/dd/merge_plan.json', 'lib/exec_dd.js'}
 
 
 PAGE = b"""<!doctype html><meta charset=utf-8><title>recv</title><pre id=o>waiting</pre><script>
@@ -22,7 +23,11 @@ addEventListener('message', async e => {
 
 class H(BaseHTTPRequestHandler):
     def do_GET(self):
-        if urlparse(self.path).path != '/recv':
+        path = urlparse(self.path).path
+        if path.startswith('/f/') and path[3:] in FILES:
+            self.send_response(200); self.send_header('Content-Type', 'text/plain; charset=utf-8'); self.send_header('Cache-Control', 'no-store'); self.end_headers()
+            self.wfile.write((W / path[3:]).read_bytes()); return
+        if path != '/recv':
             self.send_response(404); self.end_headers(); return
         self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8'); self.end_headers()
         self.wfile.write(PAGE)
